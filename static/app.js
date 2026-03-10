@@ -13,10 +13,12 @@ const presets = {
 
 const state = {
   fileName: "",
+  fileSize: 0,
   originalFormat: "",
   originalWidth: 0,
   originalHeight: 0,
   originalCanvas: document.createElement("canvas"),
+  exif: createEmptyExif(),
   crop: { x: 0, y: 0, width: 0, height: 0 },
   rotation: 0,
   outputWidth: 0,
@@ -33,7 +35,7 @@ const state = {
 
 const refs = {
   uploadInput: document.querySelector("#uploadInput"),
-  dropzone: document.querySelector("#dropzone"),
+  dropzone: document.querySelector("#previewStage"),
   previewStage: document.querySelector("#previewStage"),
   previewCanvas: document.querySelector("#previewCanvas"),
   stagePlaceholder: document.querySelector("#stagePlaceholder"),
@@ -44,6 +46,7 @@ const refs = {
   modeChip: document.querySelector("#modeChip"),
   dimensionChip: document.querySelector("#dimensionChip"),
   fileNameText: document.querySelector("#fileNameText"),
+  fileSizeText: document.querySelector("#fileSizeText"),
   originalDimensionText: document.querySelector("#originalDimensionText"),
   originalFormatText: document.querySelector("#originalFormatText"),
   sourceSummary: document.querySelector("#sourceSummary"),
@@ -79,7 +82,29 @@ const refs = {
   qualityInput: document.querySelector("#qualityInput"),
   qualityValue: document.querySelector("#qualityValue"),
   exportBtn: document.querySelector("#exportBtn"),
+  replacePhotoBtn: document.querySelector("#replacePhotoBtn"),
+  exifMakeValue: document.querySelector("#exifMakeValue"),
+  exifModelValue: document.querySelector("#exifModelValue"),
+  exifLensValue: document.querySelector("#exifLensValue"),
+  exifDateValue: document.querySelector("#exifDateValue"),
+  exifExposureValue: document.querySelector("#exifExposureValue"),
+  exifApertureValue: document.querySelector("#exifApertureValue"),
+  exifIsoValue: document.querySelector("#exifIsoValue"),
+  exifFocalValue: document.querySelector("#exifFocalValue"),
 };
+
+function createEmptyExif() {
+  return {
+    make: "-",
+    model: "-",
+    lens: "-",
+    date: "-",
+    exposure: "-",
+    aperture: "-",
+    iso: "-",
+    focalLength: "-",
+  };
+}
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
@@ -99,6 +124,219 @@ function baseName(fileName) {
 
 function formatNumber(value) {
   return new Intl.NumberFormat("zh-Hant").format(round(value));
+}
+
+function formatFileSize(bytes) {
+  if (!bytes) {
+    return "-";
+  }
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(1)} KB`;
+  }
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function getString(view, offset, length) {
+  let text = "";
+  for (let index = 0; index < length && offset + index < view.byteLength; index += 1) {
+    text += String.fromCharCode(view.getUint8(offset + index));
+  }
+  return text;
+}
+
+function getExifTypeSize(type) {
+  return {
+    1: 1,
+    2: 1,
+    3: 2,
+    4: 4,
+    5: 8,
+    7: 1,
+    9: 4,
+    10: 8,
+  }[type] || 0;
+}
+
+function readExifValue(view, entryOffset, type, count, tiffOffset, littleEndian) {
+  const unitSize = getExifTypeSize(type);
+  if (!unitSize) {
+    return null;
+  }
+
+  const totalSize = unitSize * count;
+  const valueOffset = totalSize <= 4
+    ? entryOffset + 8
+    : tiffOffset + view.getUint32(entryOffset + 8, littleEndian);
+
+  if (valueOffset < 0 || valueOffset + totalSize > view.byteLength) {
+    return null;
+  }
+
+  if (type === 2) {
+    return getString(view, valueOffset, count).replace(/\0+$/, "").trim() || null;
+  }
+
+  const values = [];
+  for (let index = 0; index < count; index += 1) {
+    const itemOffset = valueOffset + index * unitSize;
+    let value = null;
+
+    switch (type) {
+      case 1:
+      case 7:
+        value = view.getUint8(itemOffset);
+        break;
+      case 3:
+        value = view.getUint16(itemOffset, littleEndian);
+        break;
+      case 4:
+        value = view.getUint32(itemOffset, littleEndian);
+        break;
+      case 5: {
+        const numerator = view.getUint32(itemOffset, littleEndian);
+        const denominator = view.getUint32(itemOffset + 4, littleEndian);
+        value = denominator ? numerator / denominator : null;
+        break;
+      }
+      case 9:
+        value = view.getInt32(itemOffset, littleEndian);
+        break;
+      case 10: {
+        const numerator = view.getInt32(itemOffset, littleEndian);
+        const denominator = view.getInt32(itemOffset + 4, littleEndian);
+        value = denominator ? numerator / denominator : null;
+        break;
+      }
+      default:
+        value = null;
+    }
+
+    values.push(value);
+  }
+
+  return count === 1 ? values[0] : values;
+}
+
+function readIfd(view, ifdOffset, tiffOffset, littleEndian) {
+  if (ifdOffset < 0 || ifdOffset + 2 > view.byteLength) {
+    return {};
+  }
+
+  const tagCount = view.getUint16(ifdOffset, littleEndian);
+  const tags = {};
+
+  for (let index = 0; index < tagCount; index += 1) {
+    const entryOffset = ifdOffset + 2 + index * 12;
+    if (entryOffset + 12 > view.byteLength) {
+      break;
+    }
+
+    const tag = view.getUint16(entryOffset, littleEndian);
+    const type = view.getUint16(entryOffset + 2, littleEndian);
+    const count = view.getUint32(entryOffset + 4, littleEndian);
+    tags[tag] = readExifValue(view, entryOffset, type, count, tiffOffset, littleEndian);
+  }
+
+  return tags;
+}
+
+function formatExifDate(value) {
+  if (!value || typeof value !== "string") {
+    return "-";
+  }
+  return value.replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3");
+}
+
+function formatExposure(value) {
+  if (!value || Number.isNaN(value)) {
+    return "-";
+  }
+  if (value >= 1) {
+    return `${value.toFixed(value >= 10 ? 0 : 1)}s`;
+  }
+  const reciprocal = Math.round(1 / value);
+  return reciprocal > 0 ? `1/${reciprocal}s` : `${value.toFixed(3)}s`;
+}
+
+function formatAperture(value) {
+  if (!value || Number.isNaN(value)) {
+    return "-";
+  }
+  return `f/${value.toFixed(1)}`;
+}
+
+function formatIso(value) {
+  if (!value || Number.isNaN(value)) {
+    return "-";
+  }
+  return `ISO ${Math.round(value)}`;
+}
+
+function formatFocalLength(value) {
+  if (!value || Number.isNaN(value)) {
+    return "-";
+  }
+  return `${Math.round(value)}mm`;
+}
+
+function parseJpegExif(arrayBuffer) {
+  const view = new DataView(arrayBuffer);
+  if (view.byteLength < 4 || view.getUint16(0, false) !== 0xffd8) {
+    return createEmptyExif();
+  }
+
+  let offset = 2;
+  while (offset + 4 <= view.byteLength) {
+    if (view.getUint8(offset) !== 0xff) {
+      break;
+    }
+
+    const marker = view.getUint8(offset + 1);
+    if (marker === 0xda || marker === 0xd9) {
+      break;
+    }
+
+    const segmentLength = view.getUint16(offset + 2, false);
+    if (marker === 0xe1 && getString(view, offset + 4, 4) === "Exif") {
+      const tiffOffset = offset + 10;
+      const byteOrder = view.getUint16(tiffOffset, false);
+      const littleEndian = byteOrder === 0x4949;
+      const firstIfdOffset = view.getUint32(tiffOffset + 4, littleEndian);
+      const ifd0 = readIfd(view, tiffOffset + firstIfdOffset, tiffOffset, littleEndian);
+      const exifIfdPointer = ifd0[0x8769];
+      const exifIfd = exifIfdPointer
+        ? readIfd(view, tiffOffset + exifIfdPointer, tiffOffset, littleEndian)
+        : {};
+
+      return {
+        make: ifd0[0x010f] || "-",
+        model: ifd0[0x0110] || "-",
+        lens: exifIfd[0xa434] || "-",
+        date: formatExifDate(exifIfd[0x9003] || ifd0[0x0132] || "-"),
+        exposure: formatExposure(exifIfd[0x829a]),
+        aperture: formatAperture(exifIfd[0x829d]),
+        iso: formatIso(exifIfd[0x8827]),
+        focalLength: formatFocalLength(exifIfd[0x920a]),
+      };
+    }
+
+    offset += 2 + segmentLength;
+  }
+
+  return createEmptyExif();
+}
+
+async function parseExifFromFile(file) {
+  const isJpeg = /image\/jpeg/.test(file.type) || /\.jpe?g$/i.test(file.name);
+  if (!isJpeg) {
+    return createEmptyExif();
+  }
+
+  try {
+    return parseJpegExif(await file.arrayBuffer());
+  } catch {
+    return createEmptyExif();
+  }
 }
 
 function fitSize(width, height, maxWidth, maxHeight) {
@@ -229,6 +467,7 @@ function syncControlValues() {
     : "0 × 0";
 
   refs.fileNameText.textContent = state.fileName || "尚未載入";
+  refs.fileSizeText.textContent = hasImage() ? formatFileSize(state.fileSize) : "-";
   refs.originalDimensionText.textContent = hasImage()
     ? `${formatNumber(state.originalWidth)} × ${formatNumber(state.originalHeight)}`
     : "-";
@@ -279,6 +518,15 @@ function syncControlValues() {
   refs.exportSummary.textContent = hasImage()
     ? `輸出將會是 ${formatNumber(state.outputWidth)} × ${formatNumber(state.outputHeight)}，格式 ${refs.exportFormatInput.value === "image/png" ? "PNG" : "JPG"}${refs.exportFormatInput.value === "image/jpeg" ? `，品質 ${refs.qualityInput.value}` : ""}。`
     : "未設定輸出尺寸。";
+
+  refs.exifMakeValue.textContent = hasImage() ? state.exif.make : "-";
+  refs.exifModelValue.textContent = hasImage() ? state.exif.model : "-";
+  refs.exifLensValue.textContent = hasImage() ? state.exif.lens : "-";
+  refs.exifDateValue.textContent = hasImage() ? state.exif.date : "-";
+  refs.exifExposureValue.textContent = hasImage() ? state.exif.exposure : "-";
+  refs.exifApertureValue.textContent = hasImage() ? state.exif.aperture : "-";
+  refs.exifIsoValue.textContent = hasImage() ? state.exif.iso : "-";
+  refs.exifFocalValue.textContent = hasImage() ? state.exif.focalLength : "-";
 
   updatePresetState();
 }
@@ -647,11 +895,13 @@ async function loadFile(file) {
   }
 
   try {
-    const image = await fileToImage(file);
+    const [image, exif] = await Promise.all([fileToImage(file), parseExifFromFile(file)]);
     state.originalWidth = image.naturalWidth;
     state.originalHeight = image.naturalHeight;
     state.fileName = file.name;
+    state.fileSize = file.size || 0;
     state.originalFormat = file.type === "image/png" ? "PNG" : "JPG";
+    state.exif = exif;
 
     state.originalCanvas.width = image.naturalWidth;
     state.originalCanvas.height = image.naturalHeight;
@@ -748,6 +998,11 @@ function setupEvents() {
   refs.uploadInput.addEventListener("change", (event) => {
     const [file] = event.target.files || [];
     loadFile(file);
+  });
+
+  refs.replacePhotoBtn.addEventListener("click", () => {
+    refs.uploadInput.value = "";
+    refs.uploadInput.click();
   });
 
   refs.resetAllBtn.addEventListener("click", resetEditor);
