@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ToneLab 相片編輯 Demo</title>
+  <link rel="stylesheet" href="./static/app.css">
+  <script src="./static/app.js" defer></script>
+</head>
+<body>
+  <div class="page-glow glow-a"></div>
+  <div class="page-glow glow-b"></div>
+  <div class="page-grid"></div>
+
+  <main class="shell">
+    <header class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Browser Photo Editor Demo</p>
+        <h1>ToneLab</h1>
+        <p class="lead">
+          類 Lightroom 的網上版相片編輯 demo。上傳 JPG / PNG 後，可直接做 Crop、Rotate、Resize、亮度 / 對比 / 飽和度 / 色溫調整，並套用 preset 匯出成 JPG 或 PNG。
+        </p>
+      </div>
+
+      <div class="hero-board">
+        <article class="hero-stat">
+          <span>處理方式</span>
+          <strong>Browser-only</strong>
+          <small>圖片不會送去後端</small>
+        </article>
+        <article class="hero-stat">
+          <span>功能</span>
+          <strong>Crop / Tone / Export</strong>
+          <small>適合 demo 與原型展示</small>
+        </article>
+        <article class="hero-stat">
+          <span>輸出</span>
+          <strong>JPG / PNG</strong>
+          <small>自訂尺寸與品質</small>
+        </article>
+      </div>
+    </header>
+
+    <section class="editor-layout">
+      <aside class="control-rail">
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="panel-kicker">Import</p>
+              <h2>載入圖片</h2>
+            </div>
+            <span class="pill">Demo</span>
+          </div>
+
+          <label class="dropzone" id="dropzone">
+            <input id="uploadInput" type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
+            <span class="dropzone-kicker">Drag & Drop</span>
+            <strong>上傳 JPG / PNG</strong>
+            <small>或按一下選擇檔案</small>
+          </label>
+
+          <div class="meta-grid">
+            <div class="meta-item">
+              <span>檔名</span>
+              <strong id="fileNameText">尚未載入</strong>
+            </div>
+            <div class="meta-item">
+              <span>原始尺寸</span>
+              <strong id="originalDimensionText">-</strong>
+            </div>
+            <div class="meta-item">
+              <span>格式</span>
+              <strong id="originalFormatText">-</strong>
+            </div>
+            <div class="meta-item">
+              <span>狀態</span>
+              <strong id="modeText">待機</strong>
+            </div>
+          </div>
+
+          <button class="button ghost full-width" id="resetAllBtn" type="button">重設全部設定</button>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="panel-kicker">Geometry</p>
+              <h2>旋轉與尺寸</h2>
+            </div>
+          </div>
+
+          <div class="button-row">
+            <button class="button ghost" id="rotateLeftBtn" type="button">左轉 90°</button>
+            <button class="button ghost" id="rotateRightBtn" type="button">右轉 90°</button>
+            <button class="button ghost" id="resetRotationBtn" type="button">歸零</button>
+          </div>
+
+          <div class="slider-block">
+            <div class="slider-head">
+              <label for="rotationInput">微調角度</label>
+              <output id="rotationValue">0°</output>
+            </div>
+            <input id="rotationInput" type="range" min="-180" max="180" step="1" value="0">
+          </div>
+
+          <div class="size-grid">
+            <label class="field">
+              <span>輸出寬度</span>
+              <input id="outputWidthInput" type="number" min="1" max="6000" step="1" value="0">
+            </label>
+            <label class="field">
+              <span>輸出高度</span>
+              <input id="outputHeightInput" type="number" min="1" max="6000" step="1" value="0">
+            </label>
+          </div>
+
+          <div class="button-row compact">
+            <label class="switch">
+              <input id="aspectLockInput" type="checkbox" checked>
+              <span>鎖定比例</span>
+            </label>
+            <button class="button ghost" id="syncSizeBtn" type="button">依內容重設</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="panel-kicker">Crop</p>
+              <h2>裁切</h2>
+            </div>
+          </div>
+
+          <div class="button-row">
+            <button class="button accent" id="toggleCropModeBtn" type="button">開啟裁切模式</button>
+            <button class="button ghost" id="resetCropBtn" type="button">重設裁切</button>
+          </div>
+
+          <div class="size-grid">
+            <label class="field">
+              <span>X</span>
+              <input id="cropXInput" type="number" min="0" step="1" value="0">
+            </label>
+            <label class="field">
+              <span>Y</span>
+              <input id="cropYInput" type="number" min="0" step="1" value="0">
+            </label>
+            <label class="field">
+              <span>W</span>
+              <input id="cropWidthInput" type="number" min="1" step="1" value="0">
+            </label>
+            <label class="field">
+              <span>H</span>
+              <input id="cropHeightInput" type="number" min="1" step="1" value="0">
+            </label>
+          </div>
+
+          <p class="help-text">裁切模式會顯示原始方向的圖片，你可以拖拉選框或直接輸入數值。</p>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="panel-kicker">Tone</p>
+              <h2>基本調色</h2>
+            </div>
+          </div>
+
+          <div class="slider-block">
+            <div class="slider-head">
+              <label for="brightnessInput">亮度</label>
+              <output id="brightnessValue">0</output>
+            </div>
+            <input id="brightnessInput" type="range" min="-100" max="100" step="1" value="0">
+          </div>
+
+          <div class="slider-block">
+            <div class="slider-head">
+              <label for="contrastInput">對比</label>
+              <output id="contrastValue">0</output>
+            </div>
+            <input id="contrastInput" type="range" min="-100" max="100" step="1" value="0">
+          </div>
+
+          <div class="slider-block">
+            <div class="slider-head">
+              <label for="saturationInput">飽和度</label>
+              <output id="saturationValue">0</output>
+            </div>
+            <input id="saturationInput" type="range" min="-100" max="100" step="1" value="0">
+          </div>
+
+          <div class="slider-block">
+            <div class="slider-head">
+              <label for="temperatureInput">色溫</label>
+              <output id="temperatureValue">0</output>
+            </div>
+            <input id="temperatureInput" type="range" min="-100" max="100" step="1" value="0">
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="panel-kicker">Preset</p>
+              <h2>快速風格</h2>
+            </div>
+          </div>
+
+          <div class="preset-grid" id="presetButtons">
+            <button class="preset-button active" data-preset="clean" type="button">Clean</button>
+            <button class="preset-button" data-preset="portrait" type="button">Portrait Glow</button>
+            <button class="preset-button" data-preset="sunset" type="button">Sunset Pop</button>
+            <button class="preset-button" data-preset="mono" type="button">Mono Matte</button>
+            <button class="preset-button" data-preset="cool" type="button">Cool Film</button>
+          </div>
+        </section>
+
+        <section class="panel export-panel">
+          <div class="panel-head">
+            <div>
+              <p class="panel-kicker">Export</p>
+              <h2>匯出圖片</h2>
+            </div>
+          </div>
+
+          <div class="size-grid">
+            <label class="field">
+              <span>格式</span>
+              <select id="exportFormatInput">
+                <option value="image/jpeg">JPG</option>
+                <option value="image/png">PNG</option>
+              </select>
+            </label>
+            <label class="field" id="qualityField">
+              <span>JPG 品質</span>
+              <div class="quality-wrap">
+                <input id="qualityInput" type="range" min="60" max="100" step="1" value="92">
+                <output id="qualityValue">92</output>
+              </div>
+            </label>
+          </div>
+
+          <button class="button primary full-width" id="exportBtn" type="button">匯出 JPG / PNG</button>
+        </section>
+      </aside>
+
+      <section class="workspace">
+        <section class="panel preview-panel">
+          <div class="preview-head">
+            <div>
+              <p class="panel-kicker">Workspace</p>
+              <h2>即時預覽</h2>
+            </div>
+            <div class="chip-row">
+              <span class="chip" id="modeChip">Preview 模式</span>
+              <span class="chip" id="dimensionChip">0 × 0</span>
+            </div>
+          </div>
+
+          <div class="preview-stage" id="previewStage">
+            <canvas id="previewCanvas"></canvas>
+
+            <div class="stage-placeholder" id="stagePlaceholder">
+              <strong>把圖片拖到這裡開始編輯</strong>
+              <span>你也可以從左側面板選擇 JPG / PNG</span>
+            </div>
+
+            <div class="crop-overlay" id="cropOverlay" hidden>
+              <div class="crop-box" id="cropBox">
+                <button aria-label="Resize north west" class="crop-handle handle-nw" data-handle="nw" type="button"></button>
+                <button aria-label="Resize north" class="crop-handle handle-n" data-handle="n" type="button"></button>
+                <button aria-label="Resize north east" class="crop-handle handle-ne" data-handle="ne" type="button"></button>
+                <button aria-label="Resize east" class="crop-handle handle-e" data-handle="e" type="button"></button>
+                <button aria-label="Resize south east" class="crop-handle handle-se" data-handle="se" type="button"></button>
+                <button aria-label="Resize south" class="crop-handle handle-s" data-handle="s" type="button"></button>
+                <button aria-label="Resize south west" class="crop-handle handle-sw" data-handle="sw" type="button"></button>
+                <button aria-label="Resize west" class="crop-handle handle-w" data-handle="w" type="button"></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="status-row">
+            <p class="status-text" id="statusText">尚未載入圖片。</p>
+            <p class="status-note">提示：裁切模式用來定位選區，關閉後會看到最終輸出預覽。</p>
+          </div>
+        </section>
+
+        <section class="inspector-grid">
+          <article class="panel inspector-card">
+            <p class="panel-kicker">Source</p>
+            <h3>原始圖片</h3>
+            <p id="sourceSummary">等待載入圖片。</p>
+          </article>
+
+          <article class="panel inspector-card">
+            <p class="panel-kicker">Adjustments</p>
+            <h3>目前設定</h3>
+            <p id="adjustmentSummary">亮度、對比、飽和度與色溫皆為 0。</p>
+          </article>
+
+          <article class="panel inspector-card">
+            <p class="panel-kicker">Export</p>
+            <h3>輸出摘要</h3>
+            <p id="exportSummary">未設定輸出尺寸。</p>
+          </article>
+        </section>
+      </section>
+    </section>
+  </main>
+</body>
+</html>
