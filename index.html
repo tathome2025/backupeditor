@@ -9,10 +9,15 @@
 </head>
 <body>
   <main class="app-shell">
-    <aside class="sidebar sidebar-left">
+    <aside class="sidebar sidebar-left" id="leftSidebar">
       <header class="sidebar-head">
-        <p class="sidebar-kicker">Develop</p>
-        <h1>ToneLab</h1>
+        <div class="sidebar-head-row">
+          <div>
+            <p class="sidebar-kicker">Develop</p>
+            <h1>ToneLab</h1>
+          </div>
+          <button class="icon-button mobile-only" id="closeLeftMenuBtn" type="button">Close</button>
+        </div>
         <p class="panel-summary" id="adjustmentSummary">亮度、對比、飽和度與色溫皆為 0。</p>
       </header>
 
@@ -145,11 +150,17 @@
 
     <section class="preview-shell">
       <div class="preview-toolbar">
-        <div class="toolbar-chips">
-          <span class="micro-chip" id="modeChip">Preview 模式</span>
-          <span class="micro-chip" id="dimensionChip">0 × 0</span>
+        <div class="toolbar-side">
+          <button class="icon-button mobile-only" id="openLeftMenuBtn" type="button">Adjust</button>
+          <div class="toolbar-chips">
+            <span class="micro-chip" id="modeChip">Preview 模式</span>
+            <span class="micro-chip" id="dimensionChip">0 × 0</span>
+          </div>
         </div>
-        <span class="status-inline" id="statusText">尚未載入圖片。</span>
+        <div class="toolbar-side toolbar-side-right">
+          <span class="status-inline" id="statusText">尚未載入圖片。</span>
+          <button class="icon-button mobile-only" id="openRightMenuBtn" type="button">Info</button>
+        </div>
       </div>
 
       <div class="preview-stage" id="previewStage">
@@ -177,11 +188,14 @@
       </div>
     </section>
 
-    <aside class="sidebar sidebar-right">
+    <aside class="sidebar sidebar-right" id="rightSidebar">
       <section class="group">
         <div class="group-head">
-          <span>Photo</span>
-          <strong>Info</strong>
+          <div>
+            <span>Photo</span>
+            <strong>Info</strong>
+          </div>
+          <button class="icon-button mobile-only" id="closeRightMenuBtn" type="button">Close</button>
         </div>
 
         <div class="meta-grid">
@@ -280,6 +294,8 @@
         <p class="panel-summary" id="exportSummary">未設定輸出尺寸。</p>
       </section>
     </aside>
+
+    <button class="mobile-backdrop" id="mobileBackdrop" type="button" aria-label="Close menu" hidden></button>
   </main>
 </body>
 </html>

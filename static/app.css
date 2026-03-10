@@ -101,6 +101,13 @@ select {
   background: rgba(242, 154, 46, 0.9);
 }
 
+.sidebar-head-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
 .sidebar-head {
   display: grid;
   gap: 0.2rem;
@@ -311,6 +318,17 @@ input[type="range"] {
   gap: 0.7rem;
 }
 
+.toolbar-side {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.toolbar-side-right {
+  justify-content: flex-end;
+}
+
 .toolbar-chips {
   display: flex;
   align-items: center;
@@ -333,6 +351,29 @@ input[type="range"] {
   color: var(--muted);
   font-size: 0.8rem;
   text-align: right;
+}
+
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.7rem;
+  padding: 0 0.68rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font-size: 0.76rem;
+  cursor: pointer;
+}
+
+.icon-button.is-active {
+  border-color: rgba(242, 154, 46, 0.45);
+  background: rgba(242, 154, 46, 0.18);
+}
+
+.mobile-only {
+  display: none;
 }
 
 .preview-stage {
@@ -512,4 +553,90 @@ input[type="range"] {
 
 .full-width {
   width: 100%;
+}
+
+.mobile-backdrop {
+  display: none;
+}
+
+@media (orientation: portrait) and (max-width: 900px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .mobile-only {
+    display: inline-flex;
+  }
+
+  .sidebar {
+    position: absolute;
+    top: var(--gap);
+    bottom: var(--gap);
+    z-index: 20;
+    width: min(24rem, calc(100vw - (var(--gap) * 2.4)));
+    background: linear-gradient(180deg, rgba(34, 36, 40, 0.88), rgba(25, 27, 30, 0.86));
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 160ms ease, transform 160ms ease;
+  }
+
+  .sidebar-left {
+    left: var(--gap);
+    transform: translateX(-1rem);
+  }
+
+  .sidebar-right {
+    right: var(--gap);
+    transform: translateX(1rem);
+  }
+
+  .sidebar.is-open {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0);
+  }
+
+  .preview-shell {
+    grid-column: 1;
+    z-index: 1;
+  }
+
+  .mobile-backdrop {
+    position: absolute;
+    inset: var(--gap);
+    z-index: 10;
+    display: block;
+    border: 0;
+    padding: 0;
+    background: rgba(8, 10, 12, 0.34);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 160ms ease;
+  }
+
+  .mobile-backdrop.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .preview-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .toolbar-side,
+  .toolbar-side-right {
+    flex: 1 1 100%;
+    justify-content: space-between;
+  }
+
+  .toolbar-chips {
+    flex-wrap: wrap;
+  }
+
+  .status-inline {
+    flex: 1 1 auto;
+    text-align: left;
+  }
 }

@@ -31,10 +31,13 @@ const state = {
   renderQueued: false,
   displayImageRect: null,
   cropInteraction: null,
+  mobileMenu: null,
 };
 
 const refs = {
   uploadInput: document.querySelector("#uploadInput"),
+  leftSidebar: document.querySelector("#leftSidebar"),
+  rightSidebar: document.querySelector("#rightSidebar"),
   dropzone: document.querySelector("#previewStage"),
   previewStage: document.querySelector("#previewStage"),
   previewCanvas: document.querySelector("#previewCanvas"),
@@ -83,6 +86,11 @@ const refs = {
   qualityValue: document.querySelector("#qualityValue"),
   exportBtn: document.querySelector("#exportBtn"),
   replacePhotoBtn: document.querySelector("#replacePhotoBtn"),
+  openLeftMenuBtn: document.querySelector("#openLeftMenuBtn"),
+  openRightMenuBtn: document.querySelector("#openRightMenuBtn"),
+  closeLeftMenuBtn: document.querySelector("#closeLeftMenuBtn"),
+  closeRightMenuBtn: document.querySelector("#closeRightMenuBtn"),
+  mobileBackdrop: document.querySelector("#mobileBackdrop"),
   exifMakeValue: document.querySelector("#exifMakeValue"),
   exifModelValue: document.querySelector("#exifModelValue"),
   exifLensValue: document.querySelector("#exifLensValue"),
@@ -92,6 +100,8 @@ const refs = {
   exifIsoValue: document.querySelector("#exifIsoValue"),
   exifFocalValue: document.querySelector("#exifFocalValue"),
 };
+
+const mobileOverlayQuery = window.matchMedia("(orientation: portrait) and (max-width: 900px)");
 
 function createEmptyExif() {
   return {
@@ -134,6 +144,42 @@ function formatFileSize(bytes) {
     return `${(bytes / 1024).toFixed(1)} KB`;
   }
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function isMobileOverlayMode() {
+  return mobileOverlayQuery.matches;
+}
+
+function syncMobileMenuUI() {
+  const isMobile = isMobileOverlayMode();
+  const leftOpen = isMobile && state.mobileMenu === "left";
+  const rightOpen = isMobile && state.mobileMenu === "right";
+
+  refs.leftSidebar.classList.toggle("is-open", leftOpen);
+  refs.rightSidebar.classList.toggle("is-open", rightOpen);
+  refs.openLeftMenuBtn.classList.toggle("is-active", leftOpen);
+  refs.openRightMenuBtn.classList.toggle("is-active", rightOpen);
+  refs.mobileBackdrop.hidden = !isMobile;
+  refs.mobileBackdrop.classList.toggle("is-visible", leftOpen || rightOpen);
+}
+
+function closeMobileMenus() {
+  if (!state.mobileMenu) {
+    syncMobileMenuUI();
+    return;
+  }
+
+  state.mobileMenu = null;
+  syncMobileMenuUI();
+}
+
+function toggleMobileMenu(side) {
+  if (!isMobileOverlayMode()) {
+    return;
+  }
+
+  state.mobileMenu = state.mobileMenu === side ? null : side;
+  syncMobileMenuUI();
 }
 
 function getString(view, offset, length) {
@@ -1005,6 +1051,31 @@ function setupEvents() {
     refs.uploadInput.click();
   });
 
+  refs.openLeftMenuBtn.addEventListener("click", () => {
+    toggleMobileMenu("left");
+  });
+
+  refs.openRightMenuBtn.addEventListener("click", () => {
+    toggleMobileMenu("right");
+  });
+
+  refs.closeLeftMenuBtn.addEventListener("click", closeMobileMenus);
+  refs.closeRightMenuBtn.addEventListener("click", closeMobileMenus);
+  refs.mobileBackdrop.addEventListener("click", closeMobileMenus);
+
+  mobileOverlayQuery.addEventListener("change", () => {
+    if (!isMobileOverlayMode()) {
+      state.mobileMenu = null;
+    }
+    syncMobileMenuUI();
+  });
+
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      closeMobileMenus();
+    }
+  });
+
   refs.resetAllBtn.addEventListener("click", resetEditor);
   refs.rotateLeftBtn.addEventListener("click", () => {
     if (!hasImage()) {
@@ -1121,4 +1192,5 @@ function setupEvents() {
 setupDropzone();
 setupEvents();
 syncControlValues();
+syncMobileMenuUI();
 renderEmptyState();
