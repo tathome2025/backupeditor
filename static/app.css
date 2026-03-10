@@ -9,8 +9,8 @@
   --text: #eef0f3;
   --muted: #9da3ad;
   --muted-2: #757b85;
-  --accent: #58b0ff;
-  --accent-soft: rgba(88, 176, 255, 0.18);
+  --accent: #f29a2e;
+  --accent-soft: rgba(242, 154, 46, 0.18);
   --gap: clamp(0.55rem, 0.7vw, 0.9rem);
   --pad: clamp(0.7rem, 0.85vw, 1rem);
   --radius: 1rem;
@@ -32,7 +32,7 @@ body {
   font-family: "Avenir Next", "Segoe UI", "PingFang TC", "Noto Sans TC", sans-serif;
   color: var(--text);
   background:
-    radial-gradient(circle at 50% 0%, rgba(88, 176, 255, 0.08), transparent 28%),
+    radial-gradient(circle at 50% 0%, rgba(242, 154, 46, 0.08), transparent 28%),
     linear-gradient(180deg, #18191c 0%, #131416 100%);
 }
 
@@ -79,6 +79,26 @@ select {
   display: grid;
   align-content: start;
   gap: 0.8rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent) rgba(255, 255, 255, 0.04);
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 0.55rem;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: rgba(242, 154, 46, 0.72);
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(242, 154, 46, 0.9);
 }
 
 .sidebar-head {
@@ -142,7 +162,7 @@ select {
 .text-button {
   appearance: none;
   border: 1px solid var(--line-strong);
-  border-radius: 0.5rem;
+  border-radius: 0;
   color: var(--text);
   background: rgba(255, 255, 255, 0.025);
   cursor: pointer;
@@ -160,13 +180,13 @@ select {
 }
 
 .preset-button.active {
-  border-color: rgba(88, 176, 255, 0.45);
+  border-color: rgba(242, 154, 46, 0.45);
   background: var(--accent-soft);
 }
 
 .button.primary {
-  border-color: rgba(88, 176, 255, 0.4);
-  background: rgba(88, 176, 255, 0.18);
+  border-color: rgba(242, 154, 46, 0.4);
+  background: rgba(242, 154, 46, 0.18);
 }
 
 .button.ghost {
@@ -184,7 +204,7 @@ select {
   padding: 0;
   border: 0;
   background: transparent;
-  color: #b7dcff;
+  color: #ffc57d;
   font-size: 0.8rem;
 }
 
@@ -221,7 +241,7 @@ select {
   width: 100%;
   height: 2.1rem;
   padding: 0.35rem 0.55rem;
-  border-radius: 0.45rem;
+  border-radius: 0;
   border: 1px solid var(--line);
   background: rgba(0, 0, 0, 0.18);
   color: var(--text);
@@ -230,7 +250,7 @@ select {
 input[type="number"]:focus,
 select:focus,
 input[type="range"]:focus {
-  outline: 2px solid rgba(88, 176, 255, 0.22);
+  outline: 2px solid rgba(242, 154, 46, 0.22);
   outline-offset: 1px;
 }
 
@@ -265,7 +285,7 @@ input[type="range"]:focus {
 
 .slider-head output,
 .quality-wrap output {
-  color: #dceeff;
+  color: #ffd8a6;
   font-size: 0.78rem;
   font-variant-numeric: tabular-nums;
 }
@@ -302,7 +322,7 @@ input[type="range"] {
   align-items: center;
   min-height: 1.7rem;
   padding: 0 0.6rem;
-  border-radius: 999px;
+  border-radius: 0;
   border: 1px solid var(--line);
   color: var(--muted);
   font-size: 0.76rem;
@@ -325,7 +345,7 @@ input[type="range"] {
   display: grid;
   place-items: center;
   background:
-    radial-gradient(circle at 50% 12%, rgba(88, 176, 255, 0.08), transparent 24%),
+    radial-gradient(circle at 50% 12%, rgba(242, 154, 46, 0.08), transparent 24%),
     linear-gradient(180deg, #16181b 0%, #101114 100%);
 }
 
@@ -338,8 +358,8 @@ input[type="range"] {
 }
 
 .preview-stage.dragover {
-  border-color: rgba(88, 176, 255, 0.34);
-  box-shadow: inset 0 0 0 1px rgba(88, 176, 255, 0.18);
+  border-color: rgba(242, 154, 46, 0.34);
+  box-shadow: inset 0 0 0 1px rgba(242, 154, 46, 0.18);
 }
 
 .stage-placeholder {
@@ -347,9 +367,9 @@ input[type="range"] {
   min-height: min(22rem, 60%);
   padding: 1.5rem;
   border: 1px dashed rgba(255, 255, 255, 0.15);
-  border-radius: 1rem;
+  border-radius: 0;
   background:
-    linear-gradient(135deg, rgba(88, 176, 255, 0.14), rgba(255, 255, 255, 0.02)),
+    linear-gradient(135deg, rgba(242, 154, 46, 0.14), rgba(255, 255, 255, 0.02)),
     linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.01));
   display: grid;
   place-content: center;
@@ -391,7 +411,7 @@ input[type="range"] {
   height: 0.88rem;
   padding: 0;
   border: 2px solid #ffffff;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--accent);
 }
 
